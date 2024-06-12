@@ -1,0 +1,1 @@
+from .Tradutor import Tradutor

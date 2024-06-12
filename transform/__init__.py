@@ -1,0 +1,1 @@
+from .traduzir import Tradutor
