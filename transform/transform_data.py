@@ -1,5 +1,5 @@
-import db
 from traduzir.Tradutor import Tradutor
+from transform import db
 
 
 def transform_data():
@@ -9,9 +9,12 @@ def transform_data():
             "id": linha[0],
             "texto_en": linha[1]
         }
-        tradutor = Tradutor(dados["texto_en"], "pt")
-        texto_pt = tradutor.traduzir()
+
+        try:
+            tradutor = Tradutor(dados["texto_en"], "pt")
+            texto_pt = tradutor.traduzir()
+        except Exception as e:
+            tradutor = Tradutor(dados["texto_en"], "pt")
+            texto_pt = tradutor.traduzir()
         db.execute_query('''UPDATE public.dados SET texto_pt= %s WHERE id = %s;''',
                          params=(texto_pt, dados["id"]))
-
-transform_data()
