@@ -1,8 +1,13 @@
+import os
 import time
 
 import joblib
 
-model_data = joblib.load(r'C:\Users\mateus.hemkemeier\PycharmProjects\projeto_ml\modelo\message_classifier.pkl')
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(current_dir, os.pardir, 'message_classifier.pkl')
+
+model_data = joblib.load(file_path)
 model = model_data['model']
 metrics = model_data['metrics']
 
