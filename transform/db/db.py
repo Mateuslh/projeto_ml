@@ -15,10 +15,10 @@ DB_PARAMS = {
     'port': os.getenv('DB_PORT')
 }
 
-# connection_pool = pool.SimpleConnectionPool(
-#     1, 20,
-#     **DB_PARAMS
-# )
+connection_pool = pool.SimpleConnectionPool(
+    1, 20,
+    **DB_PARAMS
+)
 
 
 @contextmanager

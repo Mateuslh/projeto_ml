@@ -5,6 +5,7 @@ from modelo import make_model
 
 
 def execute_command(command):
+    """Executa um comando no CMD."""
     try:
         result = subprocess.run(command, shell=True)
         if result.returncode == 0:
@@ -15,9 +16,11 @@ def execute_command(command):
         print(f"Erro ao executar comando: {e}")
 
 
+# Configuração dos argumentos
 parser = argparse.ArgumentParser(description="Aplicação com fins de treinar um modelo e diponibilizar um endPoint para"
                                              " verificar a veracidade de noticas")
 
+# Adiciona argumentos
 parser.add_argument('-t', action='store_true',
                     help='Treinar o modelo e disponibilizar para a api consumir.')
 parser.add_argument('-r', action='store_true',
