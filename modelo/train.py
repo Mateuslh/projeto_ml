@@ -1,63 +1,104 @@
+import os
+import pandas as pd
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import unicodedata
 import joblib
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, recall_score, precision_score
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import train_test_split, GridSearchCV
 
+nltk.download('stopwords')
+nltk.download('wordnet')
 
 def make_model():
-    messages = [
-        "This is a real message.",
-        "Win a million dollars now!",
-        "New species discovered.",
-        "Flat earth theory is true.",
-        "Breaking news: stock prices soar.",
-        "Exclusive offer just for you.",
-        "Scientists find cure for disease.",
-        "Click here to claim your prize.",
-        "Government announces new policy.",
-        "Learn how to make money online.",
-        "Celebrity spotted at local restaurant.",
-        "New technology revolutionizes industry."
-    ]
-    labels = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1]
+    # Determinar o diretório base do projeto
+    current_dir = os.getcwd()
+    # Caminho relativo para o arquivo CSV dentro da pasta 'data'
+    data_path = os.path.join(current_dir, 'data', 'fake_and_real_news.csv')
 
-    # Divide os dados em conjuntos de treino e teste
-    X_train, X_test, y_train, y_test = train_test_split(messages, labels, test_size=0.2, random_state=42)
+    # Carregar os dados do CSV
+    data = pd.read_csv(data_path)
 
-    # Cria um pipeline de processamento de texto e modelo, sem remover stop words
-    pipeline = make_pipeline(TfidfVectorizer(stop_words=None), RandomForestClassifier())
+    print(data.isnull().sum())
+    
+    lemmatizer = WordNetLemmatizer()
+    
+    # Função para pré-processamento do texto
+    def proc_texto(texto):
+        texto = unicodedata.normalize('NFKD', texto).encode('ascii', 'ignore').decode('ascii')
+        texto = texto.lower()
+        texto = re.sub(r'[^\w\s]', '', texto)
+        texto = texto.split()
 
-    # Treina o modelo
-    pipeline.fit(X_train, y_train)
+        stplist = stopwords.words('english')
+        stplist = [word.encode('ascii', 'ignore').decode('ascii') for word in stplist]
+        stplist = [word.lower() for word in stplist]
 
-    y_pred = pipeline.predict(X_test)
-    y_prob = pipeline.predict_proba(X_test)[:, 1]
+        texto = [lemmatizer.lemmatize(palavra) for palavra in texto if palavra not in stplist]
+        texto = [palavra for palavra in texto if len(palavra) > 2]
+        texto = [palavra for palavra in texto if len(palavra) < 15]
 
+        return ' '.join(texto)
+
+    # Aplicar pré-processamento ao texto
+    data['Trata_texto'] = data['Text'].apply(lambda x: proc_texto(x))
+    dados_tratados = data['Trata_texto'].values.tolist()
+
+    # Extrair features TF-IDF com n-grams
+    tfidf = TfidfVectorizer(max_features=10000, ngram_range=(1,2))
+    x = tfidf.fit_transform(dados_tratados).toarray()
+
+    # Codificar a variável de saída
+    le = LabelEncoder()
+    y = le.fit_transform(data['label'])
+
+    # Dividir dados em conjunto de treino e teste
+    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+
+    # Inicializar e treinar modelo com hyperparameter tuning
+    rf_model = RandomForestClassifier(random_state=42)
+    param_grid = {
+        'n_estimators': [100, 200, 300],
+        'max_features': ['sqrt', 'log2', None],
+        'max_depth': [10, 20, 30, None]
+    }
+    
+    grid_search = GridSearchCV(estimator=rf_model, param_grid=param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+    best_rf_model = grid_search.best_estimator_
+
+    # Avaliar modelo
+    y_pred = best_rf_model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
-    auc = roc_auc_score(y_test, y_prob)
+    roc_auc = roc_auc_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred)
 
-    feature_importance = {
-        'length': 1,  # preencher aqui
-        'keywords': 1,  # preencher aqui
-        'punctuation': 1,  # preencher aqui
-    }
+    print(f'Accuracy: {accuracy}')
+    print(f'ROC AUC: {roc_auc}')
+    print(f'F1 Score: {f1}')
+    print(f'Recall: {recall}')
+    print(f'Precision: {precision}')
 
-    total_importance = sum(feature_importance.values())
-    feature_importance = {k: v / total_importance for k, v in feature_importance.items()}
+    # Salvar modelo e artefatos necessários
+    artifacts_dir = os.path.join(current_dir, 'artifacts')
+    os.makedirs(artifacts_dir, exist_ok=True)
 
-    joblib.dump({
-        'model': pipeline,
-        'metrics': {
-            'accuracy': accuracy,
-            'auc': auc,
-            'f1_score': f1,
-            'recall': recall,
-            'precision': precision,
-            'feature_importance': feature_importance
-        }
-    }, 'message_classifier.pkl')
+    model_path = os.path.join(artifacts_dir, 'model.pkl')
+    tfidf_path = os.path.join(artifacts_dir, 'tfidf.pkl')
+    label_encoder_path = os.path.join(artifacts_dir, 'label_encoder.pkl')
+
+    joblib.dump(best_rf_model, model_path)
+    joblib.dump(tfidf, tfidf_path)
+    joblib.dump(le, label_encoder_path)
+
+    print("Modelo treinado e artefatos salvos com sucesso.")
+
+# Chamar a função para criar e salvar o modelo
+make_model()

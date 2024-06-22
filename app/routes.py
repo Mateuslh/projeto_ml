@@ -5,7 +5,7 @@ from modelo.func import predict_text
 main_bp = Blueprint('main', __name__)
 
 
-@main_bp.route('/', methods=['GET'])
+@main_bp.route('/', methods=['GET', 'POST'])
 def is_fake():
     try:
         text = request.get_json()
