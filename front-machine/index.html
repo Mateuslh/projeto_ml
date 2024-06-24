@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detector de Fake News</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Detector de Fake News</h1>
+        <form id="newsForm">
+            <label for="newsInput">Digite a notícia:</label>
+            <input type="text" id="newsInput" name="newsInput" required>
+            <button type="submit" id="submitButton">Verificar</button>
+        </form>
+        <div id="loading"></div>
+        <div id="response"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

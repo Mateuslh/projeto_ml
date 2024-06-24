@@ -1,38 +1,37 @@
-import time
 import os
 import joblib
-import re
 import unicodedata
+import pandas as pd
+import nltk
+import re
+
 from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from sklearn.preprocessing import LabelEncoder
 
-# Determine o diretório base do projeto
-BASE_DIR = os.getcwd()
-
-# Construa o caminho completo para os arquivos .pkl e outros artefatos
-tfidf_path = os.path.join(BASE_DIR, 'artifacts', 'tfidf.pkl')
-model_path = os.path.join(BASE_DIR, 'artifacts', 'model.pkl')
-label_encoder_path = os.path.join(BASE_DIR, 'artifacts', 'label_encoder.pkl')
-
-# Carregue o modelo, vetorizador TF-IDF e LabelEncoder
-try:
+# Carregar modelo, vetorizador TF-IDF e LabelEncoder
+def load_artifacts(model_path, tfidf_path, label_encoder_path):
     model = joblib.load(model_path)
     tfidf = joblib.load(tfidf_path)
     label_encoder = joblib.load(label_encoder_path)
-except Exception as e:
-    print(f"Erro ao carregar modelo e artefatos: {e}")
-    model = None
-    tfidf = None
-    label_encoder = None
+    return model, tfidf, label_encoder
 
-def measure_time(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        exec_time = f"{int((time.time() - start_time) * 1000)}ms"
-        result['execution_time'] = exec_time
-        return result
-    return wrapper
+def predict_label(texto, model, tfidf, label_encoder):
+    # Pré-processamento do texto
+    texto_processado = proc_texto(texto)
+    
+    # Transformar texto em vetor TF-IDF
+    texto_vetorizado = tfidf.transform([texto_processado]).toarray()
+    
+    # Fazer a predição usando o modelo carregado
+    prediction = model.predict(texto_vetorizado)
+    
+    # Decodificar o resultado usando o LabelEncoder
+    label = label_encoder.inverse_transform(prediction)[0]
+    
+    return label
 
+# Função para pré-processamento do texto
 def proc_texto(texto):
     texto = unicodedata.normalize('NFKD', texto).encode('ascii', 'ignore').decode('ascii')
     texto = texto.lower()
@@ -43,50 +42,24 @@ def proc_texto(texto):
     stplist = [word.encode('ascii', 'ignore').decode('ascii') for word in stplist]
     stplist = [word.lower() for word in stplist]
 
-    texto = [palavra for palavra in texto if palavra not in stplist]
-    # Remover palavras muito curtas e muito longas
-    texto = [palavra for palavra in texto if len(palavra) > 1 and len(palavra) < 20]
+    lemmatizer = WordNetLemmatizer()  # Add this line to define the lemmatizer
+    texto = [lemmatizer.lemmatize(palavra) for palavra in texto if palavra not in stplist]
+    texto = [palavra for palavra in texto if len(palavra) > 2]
+    texto = [palavra for palavra in texto if len(palavra) < 15]
 
     return ' '.join(texto)
+# Caminhos dos artefatos
+artifacts_dir = os.path.join(os.getcwd(), 'artifacts')
+model_path = os.path.join(artifacts_dir, 'model.pkl')
+tfidf_path = os.path.join(artifacts_dir, 'tfidf.pkl')
+label_encoder_path = os.path.join(artifacts_dir, 'label_encoder.pkl')
 
-@measure_time
-def predict_text(text):
-    if model is None or tfidf is None or label_encoder is None:
-        return {
-            'error': 'Modelo não foi carregado corretamente. Verifique os arquivos .pkl e artefatos.'
-        }
+# Carregar modelo e artefatos
+model, tfidf, label_encoder = load_artifacts(model_path, tfidf_path, label_encoder_path)
 
-    try:
-        # Pré-processamento do texto de entrada
-        processed_text = proc_texto(text)
+# Exemplo de texto para predição
+texto_exemplo = "USA is a city of Brazil."
 
-        # Vetorização do texto usando TF-IDF
-        text_vectorized = tfidf.transform([processed_text]).toarray()
-
-        # Predição usando o modelo carregado
-        prediction = model.predict(text_vectorized)[0]
-        probability = model.predict_proba(text_vectorized)[0].max()
-
-        confidence_interval = [probability - 0.05, probability + 0.05]
-
-        # Decodificação da predição usando LabelEncoder
-        prediction_label = label_encoder.inverse_transform([prediction])[0]
-
-        result = {
-            'input_message': text,
-            'prediction': prediction_label,
-            'model': {
-                'probability': probability,
-                'confidence_interval': confidence_interval,
-                'info': {
-                    'model_name': 'MessageClassifier',
-                    'model_version': '1.0'
-                }
-            }
-        }
-        return result
-
-    except Exception as e:
-        return {
-            'error': f"Erro durante a previsão: {e}"
-        }
+# Fazer a predição
+predicted_label = predict_label(texto_exemplo, model, tfidf, label_encoder)
+print("Predicted label:", predicted_label)

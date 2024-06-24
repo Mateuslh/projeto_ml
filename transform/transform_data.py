@@ -1,6 +1,5 @@
-from traduzir.Tradutor import Tradutor
 from transform import db
-
+from transform.traduzir.Tradutor import Tradutor
 
 def transform_data():
     linhas = db.fetch_results("SELECT * FROM dados where texto_pt is NULL")
