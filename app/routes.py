@@ -1,23 +1,21 @@
 from flask import Blueprint, request, jsonify
-
-from modelo.func import predict_text
+import modelo.app as predict  # Supondo que 'predict' seja o nome do arquivo onde está definida a função de previsão
+from flask_cors import CORS
 
 main_bp = Blueprint('main', __name__)
+CORS(main_bp)
 
-
-@main_bp.route('/', methods=['GET', 'POST'])
+@main_bp.route('/predict', methods=['POST'])
 def is_fake():
     try:
-        text = request.get_json()
+        data = request.get_json()
+        if 'noticia' not in data:
+            return jsonify({'success': False, 'result': 'No "noticia" field provided in the request.'}), 400
 
-        if text is None or text == '':
-            return jsonify({'success': False, 'result': 'No texto passed'}), 406
+        noticia = data['noticia']
+        resultado = predict.predict(noticia)
+
+        return jsonify({'success': True, 'resultado': resultado}), 200
+
     except Exception as e:
-        return jsonify({'success': False, 'result': str(e)}), 400
-
-    try:
-        result = predict_text(text)
-    except Exception as e:
-        return jsonify({'success': False, 'result': str(e)}), 422
-
-    return jsonify({'success': False, 'result': result}), 200
+        return jsonify({'success': False, 'result': str(e)}), 500

@@ -1,1 +1,1 @@
-from .train import make_model
+from .treinamento import treinar_modelo
