@@ -97,6 +97,12 @@ def train_model():
         'min_samples_leaf': [1, 2, 4],
         'bootstrap': [True, False]
     }
+    
+    logger.info("Iniciando GridSearchCV para otimização de hiperparâmetros...")
+    skf = StratifiedKFold(n_splits=5)  # Aumentando o número de splits
+    grid_search = GridSearchCV(estimator=rf_model, param_grid=param_grid, cv=skf, scoring='accuracy', n_jobs=-1, verbose=2)
+    grid_search.fit(X_train, y_train)
+    best_rf_model = grid_search.best_estimator_
 
     # Configurar GridSearchCV
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
