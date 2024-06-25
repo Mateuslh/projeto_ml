@@ -12,6 +12,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -35,6 +36,7 @@ def treinar_modelo():
     # Carregar os dados
     data = pd.read_csv('data/fake_and_real_news.csv')
     #data = data.sample(frac=0.5, random_state=42)
+    data = data.sample(frac=0.3, random_state=42)
 
     porter_stemmer = PorterStemmer()
 
@@ -69,10 +71,17 @@ def treinar_modelo():
     with open(vectorizer_file_path, 'wb') as file:
         pickle.dump(vectorizer, file)
 
-    # Prever e calcular a acurácia
-    pred = lr.predict(X_test)
-    acc = accuracy_score(Y_test, pred)
+    # Prever nos dados de teste e calcular a acurácia de teste
+    test_pred = lr.predict(X_test)
+    test_acc = accuracy_score(Y_test, test_pred)
+    print(f'Acurácia de Teste: {test_acc*100:.2f}%')
 
-    print(f'Acurácia: {acc*100:.2f}%')
+    # Outras métricas para os dados de teste
+    print("\nMétricas de Teste:")
+    print(classification_report(Y_test, test_pred))
+
+    # Matriz de confusão para os dados de teste
+    print("\nMatriz de Confusão (Teste):")
+    print(confusion_matrix(Y_test, test_pred))
 
 treinar_modelo()
