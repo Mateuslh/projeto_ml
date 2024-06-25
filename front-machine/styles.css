@@ -8,13 +8,21 @@ body {
     margin: 0;
 }
 
-.container {
+.container1, .container2 {
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
     width: 400px;
     max-width: 90%;
+}
+
+.container1 {
+    margin-right: 20px; /* Espaçamento entre as containers */
+}
+
+.container1 h1, .container2 h1 {
+    margin-top: 0; /* Remover margem superior do título */
 }
 
 form {

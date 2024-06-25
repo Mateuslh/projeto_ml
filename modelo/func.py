@@ -8,6 +8,7 @@ import re
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from sklearn.preprocessing import LabelEncoder
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Carregar modelo, vetorizador TF-IDF e LabelEncoder
 def load_artifacts(model_path, tfidf_path, label_encoder_path):
@@ -21,15 +22,15 @@ def predict_label(texto, model, tfidf, label_encoder):
     texto_processado = proc_texto(texto)
     
     # Transformar texto em vetor TF-IDF
-    texto_vetorizado = tfidf.transform([texto_processado]).toarray()
+    texto_vetorizado = tfidf.transform([texto_processado])
     
     # Fazer a predição usando o modelo carregado
     prediction = model.predict(texto_vetorizado)
     
     # Decodificar o resultado usando o LabelEncoder
-    label = label_encoder.inverse_transform(prediction)[0]
+    label = label_encoder.inverse_transform(prediction)
     
-    return label
+    return label[0]
 
 # Função para pré-processamento do texto
 def proc_texto(texto):
@@ -48,6 +49,7 @@ def proc_texto(texto):
     texto = [palavra for palavra in texto if len(palavra) < 15]
 
     return ' '.join(texto)
+
 # Caminhos dos artefatos
 artifacts_dir = os.path.join(os.getcwd(), 'artifacts')
 model_path = os.path.join(artifacts_dir, 'model.pkl')
@@ -56,10 +58,3 @@ label_encoder_path = os.path.join(artifacts_dir, 'label_encoder.pkl')
 
 # Carregar modelo e artefatos
 model, tfidf, label_encoder = load_artifacts(model_path, tfidf_path, label_encoder_path)
-
-# Exemplo de texto para predição
-texto_exemplo = "USA is a city of Brazil."
-
-# Fazer a predição
-predicted_label = predict_label(texto_exemplo, model, tfidf, label_encoder)
-print("Predicted label:", predicted_label)
